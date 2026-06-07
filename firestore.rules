@@ -1,0 +1,122 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitive Definition
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Phase 4: Validation Blueprints (The "Anti-Update-Gap")
+    function isValidUser(data) {
+      return data.uid == request.auth.uid
+        && data.email is string && data.email.size() <= 256
+        && data.publicKey is string && data.publicKey.size() <= 2048
+        && data.exchangeKey is string && data.exchangeKey.size() <= 2048
+        && (data.displayName == null || (data.displayName is string && data.displayName.size() <= 64))
+        && (data.activity == null || (data.activity is string && data.activity.size() <= 128))
+        && (data.lastSeen == null || data.lastSeen is timestamp);
+    }
+
+    function isValidMessage(data) {
+      return data.senderId == request.auth.uid
+        && (data.senderEmail == null || data.senderEmail == request.auth.token.email)
+        && (isValidId(data.receiverId) || data.receiverId == 'GLOBAL')
+        && data.encryptedData is string && data.encryptedData.size() <= 1048576
+        && data.iv is string && data.iv.size() <= 128
+        && (data.receiverId == 'GLOBAL' || (data.encryptedAesKey is string && data.encryptedAesKey.size() <= 2048))
+        && (data.encryptedAesKeySelf == null || (data.encryptedAesKeySelf is string && data.encryptedAesKeySelf.size() <= 2048))
+        && data.signature is string && data.signature.size() <= 1024
+        && data.hash is string && data.hash.size() == 64
+        && data.nonce is string && data.nonce.size() <= 64
+        && data.gateway in ['alpha', 'beta', 'global']
+        && data.timestamp is timestamp
+        && (data.expiresAt == null || data.expiresAt is timestamp)
+        && (data.fileName == null || (data.fileName is string && data.fileName.size() <= 256))
+        && (data.mimeType == null || (data.mimeType is string && data.mimeType.size() <= 128))
+        && (data.isImage == null || (data.isImage is bool))
+        && (data.fallbackImage == null || (data.fallbackImage is string && data.fallbackImage.size() <= 1048576))
+        && (data.covertMethod == null || (data.covertMethod in ['lsb', 'dct']))
+        && (data.isChunked == null || (data.isChunked is bool))
+        && (data.encChunksCount == null || (data.encChunksCount is int))
+        && (data.fallbackChunksCount == null || (data.fallbackChunksCount is int))
+        && data.keys().hasAll(['senderId', 'receiverId', 'encryptedData', 'iv', 'hash', 'timestamp', 'nonce', 'gateway']);
+    }
+
+    // COLLECTIONS
+    
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && isValidUser(incoming()) 
+        && incoming().lastSeen == request.time;
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'publicKey', 'exchangeKey', 'lastSeen', 'activity'])
+      ) && (
+        !incoming().diff(existing()).affectedKeys().hasAny(['lastSeen']) ||
+        incoming().lastSeen == request.time
+      );
+    }
+
+    match /messages/{messageId} {
+      // 8. Secure List Queries (Enforce isolation)
+      allow list: if isSignedIn() && (
+        resource.data.get('receiverId', 'UNKNOWN') == request.auth.uid || 
+        resource.data.get('senderId', 'UNKNOWN') == request.auth.uid ||
+        resource.data.get('receiverId', 'UNKNOWN') == 'GLOBAL'
+      );
+      
+      allow get: if isSignedIn() && isValidId(messageId) && (
+        resource.data.get('receiverId', 'UNKNOWN') == request.auth.uid || 
+        resource.data.get('senderId', 'UNKNOWN') == request.auth.uid ||
+        resource.data.get('receiverId', 'UNKNOWN') == 'GLOBAL'
+      );
+
+      allow create: if isSignedIn() && request.auth.token.email_verified == true && isValidId(messageId) && isValidMessage(incoming())
+        && incoming().timestamp == request.time;
+      
+      allow delete: if isSignedIn() && isValidId(messageId) && (
+        resource.data.get('receiverId', 'UNKNOWN') == request.auth.uid || 
+        resource.data.get('senderId', 'UNKNOWN') == request.auth.uid
+      );
+
+      match /chunks/{chunkId} {
+        function canAccessParent() {
+          let parent = get(/databases/$(database)/documents/messages/$(messageId)).data;
+          return parent.senderId == request.auth.uid || parent.receiverId == request.auth.uid || parent.receiverId == 'GLOBAL';
+        }
+
+        allow read: if isSignedIn() && isValidId(messageId) && canAccessParent();
+
+        allow create: if isSignedIn() && request.auth.token.email_verified == true && isValidId(messageId) && isValidId(chunkId) && (
+           incoming().parentMessageId == messageId &&
+           incoming().senderId == request.auth.uid &&
+           (isValidId(incoming().receiverId) || incoming().receiverId == 'GLOBAL') &&
+           incoming().data is string && incoming().data.size() <= 800001
+        );
+
+        allow delete: if isSignedIn() && isValidId(messageId) && isValidId(chunkId) && canAccessParent();
+      }
+    }
+  }
+}

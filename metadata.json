@@ -1,0 +1,11 @@
+{
+  "name": "NecroSteg | Secure Forensic Communication",
+  "description": "An advanced secure messaging and forensic analysis platform with image optimization, automated LSB detection, and stealth logging suppression.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "Image Processing",
+    "Steganography",
+    "Forensics",
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
