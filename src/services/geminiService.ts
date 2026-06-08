@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey = (typeof process !== "undefined" && process.env?.GEMINI_API_KEY) || (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
+const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY || "";
 const ai = new GoogleGenAI({ 
   apiKey,
   httpOptions: {
@@ -49,7 +49,7 @@ export async function interpretPayload(rawPayload: string, domain: string) {
   try {
     return await withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-1.5-flash",
         contents: `DOMAIN: ${domain}
         RAW PAYLOAD: ${rawPayload}
         
@@ -78,7 +78,7 @@ export async function interpretStegoPayload(hexPayload: string, message: string)
   try {
     return await withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-1.5-flash",
         contents: `Expert Steganalysis Task:
         An LSB (Least Significant Bit) extraction has yielded the following data.
         
@@ -108,7 +108,7 @@ export async function askExpert(query: string) {
   try {
     return await withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-1.5-flash",
         contents: query,
         config: {
           systemInstruction: "You are a professional Steganalysis Expert and Academic Researcher. You have deep knowledge of BOSSbase, ALASKA datasets, spatial/transform algorithms (HILL, S-UNIWARD, J-UNIWARD), and CNN detection models (SRNet). Answer queries technically but explain complex concepts simply. Focus on digital forensics and steganalysis.",
@@ -134,7 +134,7 @@ export async function analyzeMedia(query: string, base64Image: string) {
 
     return await withRetry(async () => {
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-1.5-flash",
         contents: [
           {
             role: "user",
