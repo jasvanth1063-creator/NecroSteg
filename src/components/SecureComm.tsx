@@ -15,7 +15,7 @@ import {
   getDocs
 } from 'firebase/firestore';
 import {
-  signInWithPopup, GoogleAuthProvider, onAuthStateChanged,
+  signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
@@ -1349,8 +1349,8 @@ export default function SecureComm({ user }: { user: FirebaseUser | null }) {
     setPlayoffAnalysis({ report: '', loading: true });
     try {
       const { GoogleGenerativeAI } = await import("@google/generative-ai");
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+     const genAI = new GoogleGenerativeAI((import.meta as any).env?.VITE_GEMINI_API_KEY || '');
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const prompt = `You are a military intelligence analyst for a secure communication platform. 
       Analyze the current "Playoff" status of the secure communication network based on these logs (simulated):
@@ -1685,8 +1685,7 @@ useEffect(() => {
         }
 
         // Mark decoys visually
-        setDecoyIds(prev => {
-          const next = new Set(prev);
+        setDecoyIds(prev => {          const next = new Set(prev);
           event.decoyIds.forEach(id => next.add(id));
           return next;
         });
@@ -1768,8 +1767,8 @@ useEffect(() => {
   const displayedMessages = filteredMessages;
 
   const handleLogin = async () => {
-    try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch {}
-  };
+   getRedirectResult(auth).catch(() => {});
+try { await signInWithRedirect(auth, new GoogleAuthProvider()); } catch {}
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
