@@ -1,5 +1,6 @@
 import { loginWithGoogle } from '../lib/auth';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   ShieldCheck, MessageCircle, Globe, Lock, Zap, ArrowRight,
   ShieldAlert, Server, Fingerprint, Send, User as UserIcon,
