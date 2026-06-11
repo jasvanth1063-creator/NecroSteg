@@ -64,7 +64,7 @@ export default function SecurityLayer({ user, children }: SecurityLayerProps) {
 
   const checkStatus = useCallback(() => {
     if (!user) return;
-    const hasHash = getSavedHash(user.google_id —);
+    const hasHash = getSavedHash(user.google_id);
     if (!hasHash) {
       setOnboarding(true);
       setStep('create');
@@ -122,8 +122,8 @@ export default function SecurityLayer({ user, children }: SecurityLayerProps) {
     }
     setLoading(true);
     try {
-      const hash = await hashPasscode(passcode, user.google_id —);
-      savePasscodeHash(user.google_id —, hash);
+      const hash = await hashPasscode(passcode, user.google_id);
+      savePasscodeHash(user.google_id, hash);
       unlockSession();
       setLocked(false);
       setOnboarding(false);
@@ -139,8 +139,8 @@ export default function SecurityLayer({ user, children }: SecurityLayerProps) {
     setLoading(true);
     try {
       const sanitizedPasscode = passcode;
-      const savedHash = getSavedHash(user.google_id —);
-      const inputHash = await hashPasscode(sanitizedPasscode, user.google_id —);
+      const savedHash = getSavedHash(user.google_id);
+      const inputHash = await hashPasscode(sanitizedPasscode, user.google_id);
       
       if (savedHash === inputHash) {
         unlockSession();
@@ -334,7 +334,7 @@ export default function SecurityLayer({ user, children }: SecurityLayerProps) {
                    <button 
                     onClick={() => {
                       if (window.confirm("CRITICAL_ACTION: This will wipe your secure vault local configuration. You will need to set a new 12-character passcode immediately and may lose access to previously stored session data. Proceed?")) {
-                        resetPasscode(user.google_id —);
+                        resetPasscode(user.google_id);
                         checkStatus();
                       }
                     }}
