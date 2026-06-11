@@ -254,7 +254,7 @@ export default function App() {
                   <div className="relative">
                     <div className="w-10 h-10 rounded bg-accent-primary/10 border border-accent-primary/30 overflow-hidden">
                       <img 
-                        src={`https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`} 
+                        src={`https://api.dicebear.com/7.x/bottts/svg?seed=${user.google_id}`} 
                         alt="Operator"
                         className="w-full h-full object-cover"
                       />
@@ -262,7 +262,7 @@ export default function App() {
                     <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-accent-primary border-2 border-bg-surface rounded-full" />
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <p className="text-[10px] font-bold text-text-main truncate uppercase tracking-widest">{user.displayName || 'Operator_Proxied'}</p>
+                    <p className="text-[10px] font-bold text-text-main truncate uppercase tracking-widest">{user.name || 'Operator_Proxied'}</p>
                     <div className="flex items-center gap-1">
                       <ShieldCheck className="w-2.5 h-2.5 text-accent-primary" />
                       <span className="text-[8px] text-text-dim font-mono uppercase">Auth_Verified</span>
