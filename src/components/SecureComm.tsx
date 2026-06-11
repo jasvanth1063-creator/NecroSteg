@@ -1,3 +1,4 @@
+import { loginWithGoogle } from '../lib/auth';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -15,10 +16,7 @@ import {
   getDocs
 } from 'firebase/firestore';
 import {
-  signInWithPopup, GoogleAuthProvider, onAuthStateChanged,
-  User as FirebaseUser
-} from 'firebase/auth';
-import { db, auth } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import { optimizeImageForSecureComm, extractRawLSBEntropy, extractRawDCTEntropy } from '../lib/stegoUtils';
 const StageUtilization = React.lazy(() => import('./StageUtilization'));
 import { safeStorage } from '../lib/safeStorage';
@@ -1768,7 +1766,7 @@ useEffect(() => {
   const displayedMessages = filteredMessages;
 
   const handleLogin = async () => {
-    try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch {}
+    loginWithGoogle();
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
