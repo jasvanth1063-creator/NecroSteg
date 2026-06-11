@@ -24,8 +24,7 @@ import {
   Lock,
   Cpu
 } from 'lucide-react';
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { auth } from './lib/firebase';
+import { getUser, logoutUser } from './lib/auth';
 import Workbench from './components/Workbench';
 import Forensics from './components/Forensics';
 import Domains from './components/Domains';
@@ -39,7 +38,7 @@ type Tab = 'workbench' | 'forensics' | 'domains' | 'research' | 'chat' | 'comm';
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('research');
   const [systemReady, setSystemReady] = useState(false);
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isBlurred, setIsBlurred] = useState(false);
 
@@ -65,11 +64,8 @@ export default function App() {
     document.documentElement.classList.toggle('light', theme === 'light');
   }, [theme]);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-    });
-    return () => unsub();
+ useEffect(() => {
+    getUser().then(u => setUser(u));
   }, []);
 
   useEffect(() => {
@@ -275,7 +271,7 @@ export default function App() {
                 </div>
                 
                 <button 
-                  onClick={() => signOut(auth)}
+                  onClick={() => logoutUser()}
                   title="Securely terminate the current session and wipe local cache."
                   className="w-full flex items-center justify-between px-3 py-2 rounded text-[10px] text-text-dim hover:text-red-500 hover:bg-red-500/5 transition-colors group border border-transparent hover:border-red-500/20"
                 >
