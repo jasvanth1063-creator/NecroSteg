@@ -1072,7 +1072,7 @@ const MessageCard = ({
   const [showHash, setShowHash] = useState(false);
   const [verified, setVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const isMine = msg.senderId === currentUser.uid;
+  const isMine = msg.senderId === currentUser.google_id;
 
   const performVerification = async () => {
     if (!senderProfile?.publicKey) return;
@@ -1121,7 +1121,7 @@ const MessageCard = ({
           <div className={`w-5 h-5 rounded-full flex items-center justify-center ${verified ? 'bg-accent-primary/10' : 'bg-red-500/10'}`}>
             {verified ? <CheckCircle2 className="w-3 h-3 text-accent-primary" /> : <AlertTriangle className="w-3 h-3 text-red-500" />}
           </div>
-          {(isMine || msg.receiverId === currentUser.uid) && (
+          {(isMine || msg.receiverId === currentUser.google_id) && (
             <button onClick={() => onDelete(msg.id)}
               title="Permanently remove this package from the network."
               className="w-5 h-5 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 flex items-center justify-center transition-colors">
@@ -1243,7 +1243,7 @@ const MessageCard = ({
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════════════ */
 
-export default function SecureComm({ user }: { user: FirebaseUser | null }) {
+export default function SecureComm({ user }: { user: any | null }) {
   const [privateMessages, setPrivateMessages] = useState<Message[]>([]);
   const [globalMessages, setGlobalMessages] = useState<Message[]>([]);
   const [streamError, setStreamError] = useState<string | null>(null);
@@ -1337,7 +1337,7 @@ export default function SecureComm({ user }: { user: FirebaseUser | null }) {
     const map = new Map<string, UserProfile>();
     users.forEach(u => map.set(u.uid, u));
     // Include self
-    if (user) map.set(user.uid, { ...profileData, uid: user.uid, email: user.email || 'REDACTED' });
+    if (user) map.set(user.google_id, { ...profileData, uid: user.google_id, email: user.email || 'REDACTED' });
     return map;
   }, [users, user, profileData]);
 
@@ -1412,18 +1412,18 @@ export default function SecureComm({ user }: { user: FirebaseUser | null }) {
       
       setLoading(true);
       try {
-        const userRef = doc(db, 'users', user.uid);
+        const userRef = doc(db, 'users', user.google_id);
         
         const [sigPriv, encPriv, userSnap] = await Promise.all([
-          getKey(`sig_priv_${user.uid}`),
-          getKey(`enc_priv_${user.uid}`),
+          getKey(`sig_priv_${user.google_id}`),
+          getKey(`enc_priv_${user.google_id}`),
           getDoc(userRef)
         ]);
 
         if (!userSnap.exists()) {
           const keys = await generateKeyPair();
           const initialData = {
-            uid: user.uid,
+            uid: user.google_id,
             email: user.email,
             publicKey: keys.publicKey,
             exchangeKey: keys.exchangeKey,
@@ -1433,11 +1433,11 @@ export default function SecureComm({ user }: { user: FirebaseUser | null }) {
           try {
             await Promise.all([
               setDoc(userRef, initialData),
-              saveKey(`sig_priv_${user.uid}`, keys.privateKey),
-              saveKey(`enc_priv_${user.uid}`, keys.exchangePrivate)
+              saveKey(`sig_priv_${user.google_id}`, keys.privateKey),
+              saveKey(`enc_priv_${user.google_id}`, keys.exchangePrivate)
             ]);
           } catch (error) {
-            handleFirestoreError(error, OperationType.WRITE, 'users/' + user.uid);
+            handleFirestoreError(error, OperationType.WRITE, 'users/' + user.google_id);
           }
           setProfileData({ displayName: initialData.displayName, publicKey: initialData.publicKey, exchangeKey: initialData.exchangeKey });
           setPrivateKeys({ sig: keys.privateKey, enc: keys.exchangePrivate });
@@ -1451,11 +1451,11 @@ export default function SecureComm({ user }: { user: FirebaseUser | null }) {
             try {
               await Promise.all([
                 setDoc(userRef, { publicKey: keys.publicKey, exchangeKey: keys.exchangeKey }, { merge: true }),
-                saveKey(`sig_priv_${user.uid}`, keys.privateKey),
-                saveKey(`enc_priv_${user.uid}`, keys.exchangePrivate)
+                saveKey(`sig_priv_${user.google_id}`, keys.privateKey),
+                saveKey(`enc_priv_${user.google_id}`, keys.exchangePrivate)
               ]);
             } catch (error) {
-              handleFirestoreError(error, OperationType.UPDATE, 'users/' + user.uid);
+              handleFirestoreError(error, OperationType.UPDATE, 'users/' + user.google_id);
             }
             currentSigPriv = keys.privateKey;
             currentEncPriv = keys.exchangePrivate;
@@ -1471,7 +1471,7 @@ export default function SecureComm({ user }: { user: FirebaseUser | null }) {
               activity: 'ENCRYPTED_SIGNAL_STREAM'
             }, { merge: true });
           } catch (error) {
-            handleFirestoreError(error, OperationType.UPDATE, 'users/' + user.uid);
+            handleFirestoreError(error, OperationType.UPDATE, 'users/' + user.google_id);
           }
         }
       } catch (error) {
@@ -1489,7 +1489,7 @@ export default function SecureComm({ user }: { user: FirebaseUser | null }) {
     if (!user) return;
     try {
       return onSnapshot(collection(db, 'users'), (snap) => {
-        setUsers(snap.docs.map(doc => doc.data() as UserProfile).filter(p => p.uid !== user.uid));
+        setUsers(snap.docs.map(doc => doc.data() as UserProfile).filter(p => p.uid !== user.google_id));
       }, (error) => {
         // Silenced
       });
@@ -1506,7 +1506,7 @@ export default function SecureComm({ user }: { user: FirebaseUser | null }) {
     // We listen for messages where I am the receiver
     const q1 = query(
       collection(db, 'messages'),
-      where('receiverId', '==', user.uid),
+      where('receiverId', '==', user.google_id),
       orderBy('timestamp', 'desc'),
       limit(100)
     );
@@ -1514,7 +1514,7 @@ export default function SecureComm({ user }: { user: FirebaseUser | null }) {
     // And messages I sent
     const q2 = query(
       collection(db, 'messages'),
-      where('senderId', '==', user.uid),
+      where('senderId', '==', user.google_id),
       orderBy('timestamp', 'desc'),
       limit(100)
     );
@@ -1603,12 +1603,12 @@ useEffect(() => {
     let systemExpired: Message[] = [];
     try {
       const queries = [
-        query(collection(db, 'messages'), where('receiverId', '==', user.uid), where('expiresAt', '<', now)),
-        query(collection(db, 'messages'), where('senderId', '==', user.uid), where('expiresAt', '<', now)),
+        query(collection(db, 'messages'), where('receiverId', '==', user.google_id), where('expiresAt', '<', now)),
+        query(collection(db, 'messages'), where('senderId', '==', user.google_id), where('expiresAt', '<', now)),
         query(collection(db, 'messages'), where('receiverId', '==', 'GLOBAL'), where('expiresAt', '<', now)),
         // Purge legacy images (>2hr) even if no expiresAt set
-        query(collection(db, 'messages'), where('receiverId', '==', user.uid), where('isImage', '==', true), where('timestamp', '<', twoHoursAgo)),
-        query(collection(db, 'messages'), where('senderId', '==', user.uid), where('isImage', '==', true), where('timestamp', '<', twoHoursAgo)),
+        query(collection(db, 'messages'), where('receiverId', '==', user.google_id), where('isImage', '==', true), where('timestamp', '<', twoHoursAgo)),
+        query(collection(db, 'messages'), where('senderId', '==', user.google_id), where('isImage', '==', true), where('timestamp', '<', twoHoursAgo)),
         query(collection(db, 'messages'), where('receiverId', '==', 'GLOBAL'), where('isImage', '==', true), where('timestamp', '<', twoHoursAgo))
       ];
       
@@ -1660,7 +1660,7 @@ useEffect(() => {
     if (!user || allMessagesForDetection.length === 0) return;
 
     const runEffect = async () => {
-      const events = await runFloodDetection(allMessagesForDetection, selectedUser?.uid ?? null, user.uid, userMap);
+      const events = await runFloodDetection(allMessagesForDetection, selectedUser?.uid ?? null, user.google_id, userMap);
       if (events.length === 0) return;
 
       for (const event of events) {
@@ -1726,7 +1726,7 @@ useEffect(() => {
     };
 
     runEffect();
-  }, [allMessagesForDetection, user?.uid, selectedUser?.uid, userMap, privateKeys]);
+  }, [allMessagesForDetection, user?.google_id, selectedUser?.uid, userMap, privateKeys]);
 
   const filteredMessages = React.useMemo(() => {
     let base = channel === 'private' ? privateMessages : globalMessages;
@@ -1740,14 +1740,14 @@ useEffect(() => {
 
     // If no user is selected in private channel, only show previously sent packages (as requested)
     if (channel === 'private' && !selectedUser) {
-      base = base.filter(m => m.senderId === user?.uid);
+      base = base.filter(m => m.senderId === user?.google_id);
     }
 
     // In private channel, further restrict to the selected nodal peer
     if (channel === 'private' && selectedUser) {
       base = base.filter(m => 
-        (m.senderId === selectedUser.uid && m.receiverId === user?.uid) ||
-        (m.senderId === user?.uid && m.receiverId === selectedUser.uid)
+        (m.senderId === selecteduser.google_id && m.receiverId === user?.uid) ||
+        (m.senderId === user?.uid && m.receiverId === selecteduser.google_id)
       );
     }
 
@@ -1877,7 +1877,7 @@ useEffect(() => {
       }
 
       const messageRef = await addDoc(collection(db, 'messages'), {
-        senderId: user.uid,
+        senderId: user.google_id,
         senderEmail: user.email,
         receiverId: channel === 'global' ? 'GLOBAL' : selectedUser!.uid,
         encryptedData: docEncryptedData,
@@ -1905,7 +1905,7 @@ useEffect(() => {
         encChunks.forEach((chunk, idx) => {
           batch.set(doc(collection(db, 'messages', messageRef.id, 'chunks')), {
             parentMessageId: messageRef.id,
-            senderId: user.uid,
+            senderId: user.google_id,
             receiverId: channel === 'global' ? 'GLOBAL' : selectedUser!.uid,
             chunkIndex: idx,
             data: chunk,
@@ -1915,7 +1915,7 @@ useEffect(() => {
         fallbackChunks.forEach((chunk, idx) => {
           batch.set(doc(collection(db, 'messages', messageRef.id, 'chunks')), {
             parentMessageId: messageRef.id,
-            senderId: user.uid,
+            senderId: user.google_id,
             receiverId: channel === 'global' ? 'GLOBAL' : selectedUser!.uid,
             chunkIndex: idx,
             data: chunk,
@@ -1935,7 +1935,7 @@ useEffect(() => {
       }));
 
       // Update activity status
-      await setDoc(doc(db, 'users', user.uid), { 
+      await setDoc(doc(db, 'users', user.google_id), { 
         activity: `TRANSMITTING_${channel.toUpperCase()}_PACKAGE`,
         lastSeen: serverTimestamp() 
       }, { merge: true });
@@ -1970,10 +1970,10 @@ useEffect(() => {
   const updateProfile = async () => {
     if (!user) return;
     try {
-      await setDoc(doc(db, 'users', user.uid), { ...profileData, uid: user.uid, email: user.email }, { merge: true });
+      await setDoc(doc(db, 'users', user.google_id), { ...profileData, uid: user.google_id, email: user.email }, { merge: true });
       setIsProfileOpen(false);
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'users/' + user.uid);
+      handleFirestoreError(error, OperationType.UPDATE, 'users/' + user.google_id);
     }
   };
 
@@ -2257,9 +2257,9 @@ useEffect(() => {
                     onClick={async () => {
                       if (!user || !window.confirm("CONFIRM_KEY_ROTATION: This action is irreversible.")) return;
                       const ks = await generateKeyPair();
-                      await setDoc(doc(db, 'users', user.uid), { publicKey: ks.publicKey, exchangeKey: ks.exchangeKey }, { merge: true });
-                      await saveKey(`sig_priv_${user.uid}`, ks.privateKey);
-                      await saveKey(`enc_priv_${user.uid}`, ks.exchangePrivate);
+                      await setDoc(doc(db, 'users', user.google_id), { publicKey: ks.publicKey, exchangeKey: ks.exchangeKey }, { merge: true });
+                      await saveKey(`sig_priv_${user.google_id}`, ks.privateKey);
+                      await saveKey(`enc_priv_${user.google_id}`, ks.exchangePrivate);
                       setProfileData(p => ({ ...p, publicKey: ks.publicKey, exchangeKey: ks.exchangeKey }));
                       setPrivateKeys({ sig: ks.privateKey, enc: ks.exchangePrivate });
                     }}
@@ -2273,8 +2273,8 @@ useEffect(() => {
                     onClick={async () => {
                       if (!user || !window.confirm("CONFIRM_SYSTEM_PURGE: This will delete ALL pictures and messages you have sent or received. This action is irreversible.")) return;
                       try {
-                        const q1 = query(collection(db, 'messages'), where('senderId', '==', user.uid));
-                        const q2 = query(collection(db, 'messages'), where('receiverId', '==', user.uid));
+                        const q1 = query(collection(db, 'messages'), where('senderId', '==', user.google_id));
+                        const q2 = query(collection(db, 'messages'), where('receiverId', '==', user.google_id));
                         const [s1, s2] = await Promise.all([getDocs(q1), getDocs(q2)]);
                         
                         const batch = writeBatch(db);
@@ -2545,7 +2545,7 @@ useEffect(() => {
 
       <ActionAuthModal 
         isOpen={!!authAction}
-        userId={user?.uid || ''}
+        userId={user?.google_id || ''}
         onClose={() => setAuthAction(null)}
         title={authAction?.type === 'send' ? 'TRANSMISSION_AUTHORIZATION' : 'VIEW_AUTHORIZATION'}
         onSuccess={() => {
