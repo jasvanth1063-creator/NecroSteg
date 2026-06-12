@@ -3,7 +3,8 @@ const SERVER_URL = 'https://necrosteg-server.onrender.com';
 export async function getUser() {
   try {
     const res = await fetch(`${SERVER_URL}/auth/user`, {
-      credentials: 'include'
+      credentials: 'include',
+      mode: 'cors'
     });
     if (!res.ok) return null;
     return await res.json();
