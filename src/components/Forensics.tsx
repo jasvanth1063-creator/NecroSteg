@@ -35,7 +35,7 @@ import {
   Unlock, BrainCircuit, ShieldAlert, Link2, ArrowRightLeft, History,
   Map
 } from 'lucide-react';
-import { User as FirebaseUser } from 'firebase/auth';
+// Firebase auth removed
 import {
   extractBitPlane, applyHighPassFilter, decodeLSB, dct8, toGrayscale
 } from '../lib/stegoUtils';
@@ -149,7 +149,7 @@ function buildDCTMap(imageData: ImageData, onDone: (result: ImageData) => void) 
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────
-export default function Forensics({ user }: { user: FirebaseUser | null }) {
+export default function Forensics({ user }: { user: any | null }) {
   const [sourceImage, setSourceImage]       = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [activeAnalysis, setActiveAnalysis] = useState<'bitplane' | 'highpass' | 'dct' | 'heatmap'>('bitplane');
