@@ -13,11 +13,11 @@ import {
   Zap,
   Cpu
 } from 'lucide-react';
-import { User as FirebaseUser } from 'firebase/auth';
+// Firebase auth removed
 import { encodeLSB, decodeLSB, encodeDCT, decodeDCT, toGrayscale } from '../lib/stegoUtils';
 import { safeStorage } from '../lib/safeStorage';
 
-export default function Workbench({ user }: { user: FirebaseUser | null }) {
+export default function Workbench({ user }: { user: any | null }) {
   const [mode, setMode] = useState<'encode' | 'decode'>('encode');
   const [stegoMethod, setStegoMethod] = useState<'lsb' | 'dct'>('lsb');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
