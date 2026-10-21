@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-main: var(--bg-main);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-overlay: var(--bg-overlay);
+  --color-border-main: var(--border-main);
+  --color-text-main: var(--text-main);
+  --color-text-dim: var(--text-dim);
+  --color-accent-primary: var(--accent-primary);
+}
+
+:root {
+  --bg-main: #0a0a0a;
+  --bg-surface: #0d0d0d;
+  --bg-overlay: rgba(0, 0, 0, 0.9);
+  --border-main: #27272a; /* zinc-800 */
+  --text-main: #d4d4d8; /* zinc-300 */
+  --text-dim: #71717a; /* zinc-500 */
+  --accent-primary: #00FF00;
+}
+
+:root.light {
+  --bg-main: #f8fafc; /* slate-50 */
+  --bg-surface: rgba(255, 255, 255, 0.7);
+  --bg-overlay: rgba(255, 255, 255, 0.85);
+  --border-main: rgba(226, 232, 240, 0.8); /* slate-200 with alpha */
+  --text-main: #0f172a; /* slate-900 */
+  --text-dim: #64748b; /* slate-500 */
+  --accent-primary: #10b981; /* emerald-500 */
+}
+
+@layer components {
+  .glass-panel {
+    @apply backdrop-blur-md bg-bg-surface border border-border-main;
+  }
+}

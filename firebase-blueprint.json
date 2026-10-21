@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "Message": {
+      "title": "Secure Message",
+      "description": "An encrypted steganographic message package.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string", "description": "UID of the sender" },
+        "senderEmail": { "type": "string", "description": "Email of the sender" },
+        "receiverId": { "type": "string", "description": "UID of the intended recipient or 'GLOBAL'" },
+        "encryptedData": { "type": "string", "description": "Base64 encoded encrypted image data (AES-GCM)" },
+        "iv": { "type": "string", "description": "Initialization vector for AES-GCM" },
+        "encryptedAesKey": { "type": "string", "description": "AES key encrypted for recipient (RSA-OAEP)" },
+        "encryptedAesKeySelf": { "type": "string", "description": "AES key encrypted for sender" },
+        "signature": { "type": "string", "description": "Asymmetric digital signature of the hash (RSASSA-PKCS1-v1_5)" },
+        "hash": { "type": "string", "description": "SHA-256 hash of the encryptedData" },
+        "nonce": { "type": "string", "description": "Random nonce for unique derivation" },
+        "gateway": { "type": "string", "enum": ["alpha", "beta", "global"], "description": "Routing gateway used" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "fileName": { "type": "string", "description": "Original carrier filename" },
+        "mimeType": { "type": "string", "description": "MIME type of the media" },
+        "isImage": { "type": "boolean", "description": "Whether the payload is an image" },
+        "fallbackImage": { "type": "string", "description": "Raw unencrypted stego-image base64 for fallback extraction" },
+        "covertMethod": { "type": "string", "enum": ["lsb", "dct"], "description": "Method used for covert entropy embedding" },
+        "isChunked": { "type": "boolean" },
+        "encChunksCount": { "type": "integer" },
+        "fallbackChunksCount": { "type": "integer" }
+      },
+      "required": ["senderId", "receiverId", "encryptedData", "iv", "hash", "timestamp"]
+    },
+    "User": {
+      "title": "Secure User",
+      "description": "Public profile for key exchange",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "publicKey": { "type": "string", "description": "Public key for signature verification" },
+        "exchangeKey": { "type": "string", "description": "Encryption key for RSA-OAEP" },
+        "displayName": { "type": "string", "description": "Custom network alias" },
+        "activity": { "type": "string" },
+        "lastSeen": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "publicKey", "exchangeKey"]
+    },
+    "MessageChunk": {
+      "title": "Message Chunk",
+      "description": "A fragment of a large message payload.",
+      "type": "object",
+      "properties": {
+        "parentMessageId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "chunkIndex": { "type": "integer" },
+        "data": { "type": "string" },
+        "type": { "type": "string", "enum": ["encrypted", "fallback"] }
+      },
+      "required": ["parentMessageId", "senderId", "receiverId", "chunkIndex", "data"]
+    }
+  },
+  "firestore": {
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Global encrypted message exchange"
+    },
+    "/messages/{messageId}/chunks/{chunkId}": {
+      "schema": "MessageChunk",
+      "description": "Fragments for payloads > 1MB"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Public keys and user IDs"
+    }
+  }
+}
